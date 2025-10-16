@@ -14,10 +14,18 @@ const signupSchema = z.object({
   lastName: z.string(),
 });
 
-const todoSchema = z.object({
+const createtodoSchema = z.object({
   title: z.string(),
   description: z.string(),
   userId: z.number(),
+});
+
+const getTodoUserSchema = z.object({
+  userId: z.number(),
+});
+
+const getTodoSchema = z.object({
+  id: z.number(),
 });
 
 type Signup = z.infer<typeof signupSchema>;
@@ -56,7 +64,7 @@ app.post("/signup", async (req, res) => {
 app.post("/todos", async (req, res) => {
   console.log(req.body);
 
-  const { success, data, error } = todoSchema.safeParse(req.body);
+  const { success, data, error } = createtodoSchema.safeParse(req.body);
   if (!success) {
     return res.status(411).json({
       msg: "send proper data",
@@ -82,6 +90,48 @@ app.post("/todos", async (req, res) => {
   return res.status(200).json({
     msg: "Todo addedd successfully",
   });
+});
+
+app.get("/todos", async (req, res) => {
+  const { success, data, error } = getTodoUserSchema.safeParse(req.body);
+
+  if (!success) {
+    return res.status(411).json({
+      msg: "send proper data",
+    });
+  }
+  const { userId } = data;
+  const todos = await client.todo.findMany({
+    where: {
+      userId,
+    },
+  });
+  console.log(todos);
+
+  return res.status(200).json({
+    todos,
+  });
+});
+
+app.get("/todo/:id", async (req, res) => {
+  console.log(req.params.id);
+
+  const id = parseInt(req.params.id);
+
+  try {
+    const todo = await client.todo.findUnique({
+      where: { id },
+    });
+
+    res.status(200).json({
+      todo,
+    });
+  } catch (err) {
+    console.error("error in db", err);
+    res.status(500).json({
+      msg: "Internal server error",
+    });
+  }
 });
 
 app.listen(3000, () => {
