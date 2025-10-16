@@ -10,18 +10,19 @@ const signupSchema = z.object({
     firstName: z.string(),
     lastName: z.string(),
 });
+const todoSchema = z.object({
+    title: z.string(),
+    description: z.string(),
+    userId: z.number(),
+});
 app.post("/signup", async (req, res) => {
     console.log("body", req.body);
     const { success, data, error } = signupSchema.safeParse(req.body);
-    console.log(data);
     if (!success) {
-        console.log(error);
-        res.status(411).json({ msg: "send proper data" });
+        console.error(error);
+        return res.status(411).json({ msg: "send proper data" });
     }
-    if (!data)
-        return;
     const { username, password, firstName, lastName } = data;
-    async function addUser() { }
     try {
         await client.user.create({
             data: {
@@ -34,12 +35,36 @@ app.post("/signup", async (req, res) => {
     }
     catch (err) {
         console.error("error while sending to db");
-        res.status(500).json({ msg: "databse error" });
+        return res.status(500).json({ msg: "databse error" });
     }
-    addUser();
     res.status(200).json({
         msg: "sucessfully created account",
     });
+});
+app.post("/todos", async (req, res) => {
+    console.log(req.body);
+    const { success, data, error } = todoSchema.safeParse(req.body);
+    if (!success) {
+        return res.status(411).json({
+            msg: "send proper data",
+        });
+    }
+    const { title, description, userId } = data;
+    try {
+        await client.todo.create({
+            data: {
+                title,
+                description,
+                userId,
+            },
+        });
+    }
+    catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            msg: "Error in database",
+        });
+    }
 });
 app.listen(3000, () => {
     console.log("server running in port 3000");
